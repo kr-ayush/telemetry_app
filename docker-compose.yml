@@ -17,12 +17,11 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
       - xpack.security.authc.api_key.enabled=true
-      - ELASTICSEARCH_USERNAME=elastic        
-      - ELASTIC_PASSWORD=pass123  
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTIC_PASSWORD=pass123
       - node.name=elasticsearch
       - path.logs=/var/log/
       - cluster.name=elasticsearch
-      - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - logger.level=error
     ports:
@@ -72,17 +71,17 @@ services:
       dockerfile: Dockerfile
     container_name: apm-server
     command: >
-       apm-server -e
-         -E apm-server.host=0.0.0.0:8200
-         -E apm-server.rum.enabled=true
-         -E setup.template.enabled=true
-         -E setup.template.overwrite=true
-         -E setup.template.settings.index.number_of_replicas=0
-         -E output.elasticsearch.hosts=["http://elasticsearch:9200"]
-         -E output.elasticsearch.username=elastic
-         -E output.elasticsearch.password=pass123
-         -E output.elasticsearch.protocol=http
-         -E output.elasticsearch.ssl.enabled=false
+      apm-server -e
+        -E apm-server.host=0.0.0.0:8200
+        -E apm-server.rum.enabled=true
+        -E setup.template.enabled=true
+        -E setup.template.overwrite=true
+        -E setup.template.settings.index.number_of_replicas=0
+        -E output.elasticsearch.hosts=["http://elasticsearch:9200"]
+        -E output.elasticsearch.username=elastic
+        -E output.elasticsearch.password=pass123
+        -E output.elasticsearch.protocol=http
+        -E output.elasticsearch.ssl.enabled=false
     ports:
       - "8200:8200"
     networks:
@@ -103,8 +102,8 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP http receiver
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP http receiver
       - "13133:13133" # Health check extension
     networks:
       - telemetry-network
@@ -112,11 +111,11 @@ services:
       apm-server:
         condition: service_healthy
 
-  flask-app:
-    build: ./flask_app
-    container_name: flask-app
+  server:
+    build: ./server
+    container_name: async_server
     environment:
-      - OTEL_SERVICE_NAME=flask-app
+      - OTEL_SERVICE_NAME=async_server
       - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
       - OTEL_TRACES_EXPORTER=otlp,console
       - OTEL_METRICS_EXPORTER=otlp,console
@@ -128,115 +127,6 @@ services:
       - OTEL_EXPORTER_OTLP_METRICS_INSECURE=true
       - OTEL_EXPORTER_OTLP_LOGS_INSECURE=true
     ports:
-      - "5000:5000"
+      - "8000:8000"
     networks:
       - telemetry-network
-
-
-
-
-  
-
-  
-
-  
-
-  
-
-
-
-
-# # run docker compose
-# docker-compose build --no-cache
-# # docker-compose up -d
-# # docker-compose down
-
-# # see logs for container
-# # docker logs apm-server
-
-# # get into container of service
-# # docker exec -it apm-server bash, docker exec -u 0 -it apm-server bash -> as root  expalin me this docker file usecase
-
-# # update packages
-# # apt-get update
-# # apt-get install curl
-
-# # check elastic search via apm container
-# # curl -k -u elastic:pass123 https://elasticsearch:9200
-
-# # manually create a elastic search index
-# # curl -u elastic:pass123 -k -X PUT "https://localhost:9200/my_index?pretty"
-
-
-# send payload to apm server -> 200 status code
-# curl -X POST http://localhost:8200/v1/traces -H "Content-Type: application/json" -d '{
-#   "resourceSpans": [{
-#     "resource": {
-#       "attributes": [{
-#         "key": "service.name",
-#         "value": { "stringValue": "test-service" }
-#       }]
-#     },
-#     "scopeSpans": [{
-#       "spans": [{
-#         "traceId": "5B8EFFF798038103D269B633813FC60C",
-#         "spanId": "EEE19B7EC3C1B174",
-#         "name": "test-span",
-#         "kind": 1,
-#         "startTimeUnixNano": "1615534190000000000",
-#         "endTimeUnixNano": "1615534190000000000"
-#       }]
-#     }]
-#   }]
-# }'
-
-
-# local command for sending traces to elastic search
-# curl -k -u elastic:pass123 -X POST https://localhost:9200/my-index/_doc/1 ^
-# -H "Content-Type: application/json" ^
-# -d "{\"user\": \"john_doe\", \"message\": \"This is a test message\", \"timestamp\": \"2025-01-21T17:30:00\"}"
-
-# see result
-  #  curl -k -u elastic:pass123 https://localhost:9200/my-index/_doc/1
-
-# list all the indexs 
-# curl -k -u elastic:pass123 https://elasticsearch:9200/_cat/indices?v"
-
-
-
-#  in browser check users 
-# http://localhost:9200/_security/user 
-
-#  in browset check role info
-# http://localhost:9200/_security/role/kibana_custom_admin 
-
-# kibana_system  password update 
-# curl -X POST "http://localhost:9200/_security/user/kibana_system/_password" -u elastic:pass123 -H "Content-Type: application/json" -d "{\"password\": \"pass1234\"}"
-
-
-# no need
-# super user
-# curl -X PUT "http://localhost:9200/_security/user/demo-user" ^
-# -u "elastic:pass123" ^
-# -H "Content-Type: application/json" ^
-# -d "{\"roles\": [\"kibana_custom_admin\"], \"password\": \"pass1234\"}" 
-
-
-# check roles
-#  curl -X GET "http://localhost:9200/_security/role/read_write_role" -u "elastic:pass123"
-
-
-# create a user
-# curl -X POST "http://localhost:9200/_security/user/demo-user" -H "Content-Type: application/json" -u "elastic:pass123" -d "{\"password\": \"pass1234\", \"roles\": [\"kibana_admin\"]}"
-
-
-# delete roles
-# curl -X DELETE "http://localhost:9200/_security/role/kibana_custom_admin" ^ -u "elastic:pass123"
-
-# #create a role in elasticsearch 
-# kibana role demo-user
-# all indices privialiges  
-# curl -X POST "http://localhost:9200/_security/role/kibana_custom_admin" ^
-# -u "elastic:pass123" ^
-# -H "Content-Type: application/json" ^
-# -d "{\"cluster\": [\"all\"], \"indices\": [{\"names\": [\"*\",\".kibana*\", \".kibana_ingest*\",\".kibana_alerting_cases*\"], \"privileges\": [\"create_index\", \"manage\", \"all\"]}], \"applications\": [{\"application\": \"kibana-.kibana\", \"privileges\": [\"all\"], \"resources\": [\"*\"]}]}"
